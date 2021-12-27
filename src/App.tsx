@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import MapView from "./Components/MapView";
+import Home from "./Routes/Home";
 
-const App: React.FC = () => {
+function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MapView />} />
+        <Route path="/" element={<Home />} />
       </Routes>
     </Router>
   );
