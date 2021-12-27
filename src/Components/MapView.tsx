@@ -36,11 +36,6 @@ function MapView() {
 	}
 	//Nearby facilities
 	const [markers, setMarkers] = useState<kakao.maps.services.PlacesSearchResultItem[]>();
-	let container = document.getElementById('map'); //지도를 담을 영역의 DOM 레퍼런스
-	let options = { //지도를 생성할 때 필요한 기본 옵션
-		center: new window.kakao.maps.LatLng(33.450701, 126.570667), //지도의 중심좌표.
-		level: 3 //지도의 레벨(확대, 축소 정도)
-	};
 	useEffect(() => {
 		const ps = new kakao.maps.services.Places();
 		console.log(ps);
@@ -50,15 +45,19 @@ function MapView() {
 				setMarkers(result)
 			}
 		}
-		ps.keywordSearch("편의점", placesSearchCB);
-	}, [])
+		ps.categorySearch("CS2" as kakao.maps.services.CategoryGroupCode, placesSearchCB, {
+			location: new kakao.maps.LatLng(lat, long)
+		});
+	}, [[lat, long]]);
 	console.log(markers);
 	return (
 		<>
 			<h1>지도</h1>
 			<button onClick={currentLocation}>현위치</button>
 			<Map {...mapobj}>
-				<MapMarker {...mapMarkerobj}></MapMarker>
+				{markers?.map((data) =>
+					<MapMarker key={data.id} position={{ lat: +data.y, lng: +data.x }} />
+				)}
 				<CustomOverlayMap position={{ lat: 33.450701, lng: 126.570667 }}>
 					<div
 						style={{ padding: "42px", backgroundColor: "#fff", color: "#000" }}
