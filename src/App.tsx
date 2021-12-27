@@ -1,28 +1,13 @@
-import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MapView from "./Components/MapView";
 
-const { naver } = window;
-
-function App() {
-  useEffect(() => {
-    let map = null;
-    const initMap = () => {
-      const map = new naver.maps.Map("map", {
-        center: new naver.maps.LatLng(37.511337, 127.012084),
-        zoom: 13,
-      });
-    }
-    initMap();
-  }, []);
-  const mapStyle = {
-    width: "80%",
-    height: "600px",
-  };
-
+const App: React.FC = () => {
   return (
-    <React.Fragment>
-      <h1>지도</h1>
-      <div id="map" style={mapStyle}></div>
-    </React.Fragment>
+    <Router>
+      <Routes>
+        <Route path="/" element={<MapView />} />
+      </Routes>
+    </Router>
   );
 }
 
