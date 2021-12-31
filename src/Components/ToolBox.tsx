@@ -1,3 +1,4 @@
+import axios from "axios";
 import { motion } from "framer-motion";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import styled from "styled-components";
@@ -6,7 +7,10 @@ import {
 	currentLocationAtom,
 	locationAtom,
 	mapTypeAtom,
+	CurrnetMarkersAtom,
 } from "../atoms";
+import Geocode from "react-geocode";
+import { useEffect } from "react";
 
 const ToolBoxs = styled.div`
 	width: 45px;
@@ -104,6 +108,19 @@ const currentlocation = {
 	},
 };
 
+interface IProps {
+	lat: number,
+	lng: number,
+}
+
+interface IGeocodeResult {
+	result?: [
+		{
+			formatted_address: string,
+		}
+	]
+}
+
 function ToolBox() {
 	// zoom
 	const [level, setLevel] = useRecoilState(levelAtom);
@@ -113,18 +130,19 @@ function ToolBox() {
 		setLevel(result);
 	};
 	//Currnet Location Marker
-	const setCurrentLocation = useSetRecoilState(currentLocationAtom);
+	const [{ flag: currentFlag, lat: currentLat, lng: currentLng }, setCurrentLocation] = useRecoilState(currentLocationAtom);
 	//Current Location
 	const setLocation = useSetRecoilState(locationAtom);
-	const currentLocation = () => {
+	const currentLocation = async () => {
 		if (navigator.geolocation) {
 			navigator.geolocation.getCurrentPosition((position) => {
-				setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+				const { coords: { latitude, longitude } } = position;
+				setLocation({ lat: latitude, lng: longitude });
 				setLevel(3);
 				setCurrentLocation({
 					flag: true,
-					lat: position.coords.latitude,
-					lng: position.coords.longitude
+					lat: latitude,
+					lng: longitude
 				});
 			}, (error) => {
 				console.error(error);
@@ -141,6 +159,58 @@ function ToolBox() {
 		const { currentTarget: { value } } = event;
 		setMapType(+value);
 	};
+	//geocode
+	const setCurrentMarker = useSetRecoilState(CurrnetMarkersAtom);
+
+	Geocode.setApiKey(process.env.REACT_APP_GOOGLE_API_KEY);
+	Geocode.setLanguage("ko");
+	Geocode.setRegion("kr");
+	Geocode.enableDebug();
+
+	const GoogleMap = async ({ lat, lng }: IProps) => {
+		return await Geocode.fromLatLng(lat + "", lng + "")
+			.then(response => {
+				const result = response.results[0].formatted_address;
+				setCurrentMarker({
+					flag: true,
+					result: [
+						{
+							option: {
+								id: Date.now(),
+								result: {
+									position: {
+										lat: currentLat,
+										lng: currentLng,
+									},
+									image: {
+										src: "https://cdn-icons-png.flaticon.com/512/4151/4151073.png",
+										size: {
+											width: 50,
+											height: 50,
+										}
+									},
+									clickable: true,
+								}
+							},
+							info: {
+								address_name: result as string | "",
+								id: Date.now() + "",
+								x: currentLng + "",
+								y: currentLat + "",
+							}
+						}
+					]
+				});
+				console.log(result);
+				return result;
+			}).catch(err => console.log(err));
+	}
+	useEffect(() => {
+		if (currentFlag) {
+			GoogleMap({ lat: currentLat, lng: currentLng });
+		}
+	}, [currentLat, currentLng])
+
 	return (
 		<ToolBoxs>
 			<MapLavel>

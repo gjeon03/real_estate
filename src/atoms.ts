@@ -36,15 +36,7 @@ export const mapTypeAtom = atom({
 	default: kakao.maps.MapTypeId.ROADMAP,
 });
 
-export const mapGetCenter = atom<ILocation>({
-	key: "mapGetCenter",
-	default: {
-		lat: 37.5665,
-		lng: 126.9780,
-	}
-});
-
-export interface ISearchMarkersOption {
+export interface IMarkersOption {
 	id: number,
 	result: {
 		position:{
@@ -58,37 +50,45 @@ export interface ISearchMarkersOption {
 				height: number,
 			}
 		},
-		clickable: boolean,
+		clickable?: boolean,
 	}
 }
 
-export interface ISearchInfo {
-	address_name: string;
-	category_group_code: string;
-	category_group_name: string;
-	category_name: string;
-	distance: string;
-	id: string;
-	phone: string;
-	place_name: string;
-	place_url: string;
-	road_address_name: string;
-	x: string;
-	y: string;
+export interface IMarkerInfo {
+	address_name: string,
+	category_group_code?: string,
+	category_group_name?: string,
+	category_name?: string,
+	distance?: string,
+	id: string,
+	phone?: string,
+	place_name?: string,
+	place_url?: string,
+	road_address_name?: string,
+	x: string,
+	y: string,
 }
 
-interface ISearchResult {
-	option: ISearchMarkersOption,
-	info: ISearchInfo,
+export interface IMarkerResult {
+	option: IMarkersOption,
+	info: IMarkerInfo,
 }
 
-interface ISearchMarkers {
+export interface IMarkers {
 	flag: boolean,
-	result: ISearchResult[],
+	result: IMarkerResult[],
 }
 
-export const SearchMarkersAtom = atom<ISearchMarkers>({
+export const SearchMarkersAtom = atom<IMarkers>({
 	key: "searchMarkers",
+	default: {
+		flag: false,
+		result: [],
+	}
+});
+
+export const CurrnetMarkersAtom = atom<IMarkers>({
+	key: "currentMarkers",
 	default: {
 		flag: false,
 		result: [],
@@ -102,7 +102,7 @@ export const SearchResultFlagAtom = atom({
 
 interface ICustomDetail {
 	flag: boolean,
-	result: ISearchInfo,
+	result: IMarkerInfo,
 }
 
 export const CustomOverlayDetailAtom = atom<ICustomDetail>({
@@ -111,17 +111,9 @@ export const CustomOverlayDetailAtom = atom<ICustomDetail>({
 		flag: false,
 		result: {
 			address_name: "",
-			category_group_code: "",
-			category_group_name: "",
-			category_name: "",
-			distance: "",
 			id: "",
-			phone: "",
-			place_name: "",
-			place_url: "",
-			road_address_name: "",
 			x: "",
 			y: "",
-		},
+		}
 	},
 });
