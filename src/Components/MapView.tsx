@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
+	CustomOverlayMap,
 	Map, MapMarker, MapTypeId,
 } from "react-kakao-maps-sdk";
 import { useQuery } from "react-query";
@@ -14,8 +15,11 @@ import {
 	mapTypeAtom,
 	mapGetCenter,
 	SearchMarkersAtom,
-	ISearchResults,
-	SearchResultAtom,
+	ISearchInfo,
+	SearchResultFlagAtom,
+	ILocation,
+	CustomOverlayDetailAtom,
+	ISearchMarkersOption,
 } from "../atoms";
 import ToolBox from "./ToolBox";
 import { useForm } from "react-hook-form";
@@ -45,10 +49,49 @@ const SearchResult = styled.div`
 
 const SearchResultBox = styled.div`
 	width: 100%;
-	height: 50px;
+	height: 70px;
 	border-bottom: 1px solid #bababa;
-	padding: 5px;
-	background-color: pink;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	span:nth-child(1){
+		font-size: 20px;
+		font-weight: 400;
+	}
+	span:nth-child(2), span:nth-child(3){
+		font-size: 13px;
+	}
+	&:hover {
+		background-color:#FA8809;
+	}
+`;
+
+const CustomOverlayMarker = styled(motion.div)`
+	width: 50px;
+	height: 50px;
+	background-image: url("https://cdn-icons.flaticon.com/png/512/5695/premium/5695077.png?token=exp=1640874582~hmac=5b1c38465ba47869b7a6af73b7996c3d");
+	background-size: 100% 100%;
+	cursor: pointer;
+`;
+
+const CustomOverlayContent = styled.div`
+	width: auto;
+	height: 100px;
+	background-color: white;
+	border: 2px solid #FA8809;
+	border-radius: 20px;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	span:nth-child(1) {
+		font-size: 20px;
+		font-weight: 400;
+	}
+	span:nth-child(2), span:nth-child(3) {
+		font-size: 15px;
+	}
 `;
 
 const SearchBox = styled.div`
@@ -77,6 +120,7 @@ const SearchBtn = styled(motion.button)`
 	border-radius: 0 5px 5px 0;
 	border: none;
 	outline:none;
+	cursor: pointer;
 `;
 
 const SearchBtnSvg = styled(motion.svg)`
@@ -86,6 +130,12 @@ const SearchBtnSvg = styled(motion.svg)`
 
 interface IForm {
 	keyword: string;
+}
+
+const markerVariants = {
+	hover: {
+		scale: 1.2,
+	}
 }
 
 function MapView() {
@@ -113,57 +163,31 @@ function MapView() {
 		}
 	};
 	//search result list
-	const [{
-		flag: searchMarkerResultFlag,
-		result: searchResult
-	}, setSearchResult] = useRecoilState(SearchResultAtom);
-
-	useEffect(() => {
-		console.log(searchResult);
-	}, [searchResult])
+	const [searchMarkerResultFlag, setSearchResultFlag] = useRecoilState(SearchResultFlagAtom);
+	const onClickResultBox = (x: number, y: number) => {
+		setLocation({ lat: y, lng: x });
+		setGetCenter({ lat: y, lng: x });
+	};
 	//addressSearch
-	const [{
-		flag: searchMarkersFlag,
-		option: searchMarkersOption,
-	}, setSearchMarkers] = useRecoilState(SearchMarkersAtom);
+	const [searchMarker, setSearchMarkers] = useRecoilState(SearchMarkersAtom);
 
 	const places = new kakao.maps.services.Places();
-	const callback = (result: ISearchResults[], status: any) => {
+	const callback = (result: ISearchInfo[], status: any) => {
 		if (status === kakao.maps.services.Status.OK) {
-			//console.log(result);
 			const { x, y } = result[0];
 			setLocation({ lat: +y, lng: +x });
+			setGetCenter({ lat: +y, lng: +x });
 			setLevel(3);
-			setSearchMarkers({ flag: false, option: [] });
-			setSearchResult({ flag: false, result: [] });
+			setSearchMarkers({ flag: false, result: [] });
+			setSearchResultFlag(false);
 			result.map((data) => {
-				setSearchResult(({ result }) => {
+				setSearchResultFlag(true);
+				setSearchMarkers(({ result }) => {
 					return {
 						flag: true,
-						result: [
-							...result,
-							{
-								address_name: data.address_name,
-								category_group_code: data.category_group_code,
-								category_group_name: data.category_group_name,
-								category_name: data.category_name,
-								distance: data.distance,
-								id: data.id,
-								phone: data.phone,
-								place_name: data.place_name,
-								place_url: data.place_url,
-								road_address_name: data.road_address_name,
-								x: data.x,
-								y: data.y,
-							}]
-					}
-				})
-				setSearchMarkers(({ option }) => {
-					return {
-						flag: true,
-						option: [
-							...option,
-							{
+						result: [...result,
+						{
+							option: {
 								id: +data.id,
 								result: {
 									position: {
@@ -179,7 +203,23 @@ function MapView() {
 									},
 									clickable: true,
 								}
+							},
+							info: {
+								address_name: data.address_name,
+								category_group_code: data.category_group_code,
+								category_group_name: data.category_group_name,
+								category_name: data.category_name,
+								distance: data.distance,
+								id: data.id,
+								phone: data.phone,
+								place_name: data.place_name,
+								place_url: data.place_url,
+								road_address_name: data.road_address_name,
+								x: data.x,
+								y: data.y,
 							}
+
+						}
 						]
 					}
 				})
@@ -189,11 +229,18 @@ function MapView() {
 	const { register, handleSubmit } = useForm<IForm>();
 	const onValid = (data: IForm) => {
 		const { keyword } = data;
-		const latlng = new kakao.maps.LatLng(lat, lng);
+		const latlng = new kakao.maps.LatLng(getCenterLat, getCenterLng);
 		places.keywordSearch(keyword, callback, {
 			location: latlng
 		});
 	};
+
+	const searchInputMouseHandler = () => {
+		console.log("mouseOn");
+		setSearchResultFlag(true);
+	};
+	//customOverlay detailBox
+	const [{ flag: overlayDetailFlag, result: overlayDetailResult }, setOverlayDetail] = useRecoilState(CustomOverlayDetailAtom);
 
 	//Map get center
 	const getCenter = (target: kakao.maps.Map) => {
@@ -206,29 +253,34 @@ function MapView() {
 		style: { width: "100%", height: "100vh" },
 		level: level,
 	};
-	// const serviceUrl = "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcOffiTrade?";
-	// const lawdCd = "11110";
-	// const dealYmd = "202012";
-	// const url = `${serviceUrl}LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}`;
-	// const uri = new URL(url);
-	// // console.log(url);
-	// // console.log(uri);
-	// function fetchTotal() {
-	// 	return fetch(`${uri}&ServiceKey=${process.env.REACT_APP_OFFICETEL_SALES_PRICE_EN}`, {
-	// 		method: "GET",
-	// 		mode: "no-cors"
-	// 	}).then((response) => response.text())
-	// 		.then(str => new window.DOMParser().parseFromString(str, "text/xml"))
-	// 		.then(data => console.log(data));;
-	// }
-	// const data = useQuery("offi", fetchTotal);
-	// useEffect(() => {
-	// 	console.log(data);
-	// }, [data])
-
-	//area_code
-	// const area_code = require("../area_code/correction.json");
-	// console.log(area_code);
+	//marker eventlistener
+	const onMouseOverMarker = (target: kakao.maps.Marker) => {
+		console.log(target);
+	}
+	const mouseOverMarkerHandler = (info: ISearchInfo) => {
+		setOverlayDetail({
+			flag: true,
+			result: {
+				address_name: info.address_name,
+				category_group_code: info.category_group_code,
+				category_group_name: info.category_group_name,
+				category_name: info.category_name,
+				distance: info.distance,
+				id: info.id,
+				phone: info.phone,
+				place_name: info.place_name,
+				place_url: info.place_url,
+				road_address_name: info.road_address_name,
+				x: info.x,
+				y: info.y,
+			}
+		})
+	};
+	const onMouseOutMarkerHandler = () => {
+		setOverlayDetail((oldData) => {
+			return { flag: false, result: oldData.result }
+		});
+	}
 	return (
 		<>
 			<Container>
@@ -237,6 +289,7 @@ function MapView() {
 						<SearchForm onSubmit={handleSubmit(onValid)}>
 							<SearchInput
 								{...register("keyword", { required: true, minLength: 2 })}
+								onMouseDown={searchInputMouseHandler}
 								placeholder="Search for address..."
 							/>
 							<SearchBtn>
@@ -256,9 +309,13 @@ function MapView() {
 					</SearchBox>
 					{searchMarkerResultFlag ?
 						<SearchResult>
-							{searchResult.map((data) =>
-								<SearchResultBox>
-									<span>{data.address_name}</span>
+							{searchMarker.result.map((data) =>
+								<SearchResultBox key={data.info.id} onClick={() => { onClickResultBox(+data.info.x, +data.info.y) }}>
+									<span>{data.info.place_name}</span>
+									<span>지번 : {data.info.address_name}</span>
+									{data.info.road_address_name ?
+										<span>도로명 : {data.info.road_address_name}</span>
+										: null}
 								</SearchResultBox>
 							)}
 						</SearchResult>
@@ -272,11 +329,43 @@ function MapView() {
 						<MapMarker {...currentMarkerStyle} />
 						: null
 					}
-					{searchMarkersFlag ?
-						searchMarkersOption.map((data) =>
-							<MapMarker key={data.id} {...data.result} />
+					{searchMarker.flag ?
+						searchMarker.result.map((data) =>
+							// <MapMarker
+							// 	key={data.id}
+							// 	{...data.result}
+							// 	onMouseOver={onMouseOverMarker}
+							// />
+							<CustomOverlayMap
+								key={data.option.id}
+								position={{ ...data.option.result.position }}
+								yAnchor={1}
+							>
+								<CustomOverlayMarker
+									variants={markerVariants}
+									whileHover="hover"
+									onMouseOver={() => mouseOverMarkerHandler(data.info)}
+									onMouseOut={() => onMouseOutMarkerHandler()}
+								/>
+							</CustomOverlayMap>
 						)
 						: null
+					}
+					{
+						overlayDetailFlag ?
+							<CustomOverlayMap
+								position={{ lat: +overlayDetailResult.y, lng: +overlayDetailResult.x }}
+								yAnchor={1.6}
+							>
+								<CustomOverlayContent>
+									<span>{overlayDetailResult.place_name}</span>
+									<span>지번 : {overlayDetailResult.address_name}</span>
+									{overlayDetailResult.road_address_name ?
+										<span>도로명 : {overlayDetailResult.road_address_name}</span>
+										: null}
+								</CustomOverlayContent>
+							</CustomOverlayMap>
+							: null
 					}
 				</Map>
 			</Container>

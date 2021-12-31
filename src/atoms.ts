@@ -1,6 +1,6 @@
 import {atom, selector} from "recoil";
 
-interface ILocation {
+export interface ILocation {
 	lat: number,
 	lng: number,
 }
@@ -44,7 +44,7 @@ export const mapGetCenter = atom<ILocation>({
 	}
 });
 
-interface ISearchMarkersOption {
+export interface ISearchMarkersOption {
 	id: number,
 	result: {
 		position:{
@@ -62,20 +62,7 @@ interface ISearchMarkersOption {
 	}
 }
 
-interface ISearchMarkers {
-	flag: boolean,
-	option: ISearchMarkersOption[],
-}
-
-export const SearchMarkersAtom = atom<ISearchMarkers>({
-	key: "searchMarkers",
-	default: {
-		flag: false,
-		option: [],
-	}
-});
-
-export interface ISearchResults {
+export interface ISearchInfo {
 	address_name: string;
 	category_group_code: string;
 	category_group_name: string;
@@ -91,14 +78,50 @@ export interface ISearchResults {
 }
 
 interface ISearchResult {
-	flag: boolean,
-	result: ISearchResults[],
+	option: ISearchMarkersOption,
+	info: ISearchInfo,
 }
 
-export const SearchResultAtom = atom<ISearchResult>({
-	key: "searchResult",
+interface ISearchMarkers {
+	flag: boolean,
+	result: ISearchResult[],
+}
+
+export const SearchMarkersAtom = atom<ISearchMarkers>({
+	key: "searchMarkers",
 	default: {
 		flag: false,
 		result: [],
+	}
+});
+
+export const SearchResultFlagAtom = atom({
+	key: "searchResult",
+	default: false,
+});
+
+interface ICustomDetail {
+	flag: boolean,
+	result: ISearchInfo,
+}
+
+export const CustomOverlayDetailAtom = atom<ICustomDetail>({
+	key: "customOverlayDetail",
+	default: {
+		flag: false,
+		result: {
+			address_name: "",
+			category_group_code: "",
+			category_group_name: "",
+			category_name: "",
+			distance: "",
+			id: "",
+			phone: "",
+			place_name: "",
+			place_url: "",
+			road_address_name: "",
+			x: "",
+			y: "",
+		},
 	},
 });
