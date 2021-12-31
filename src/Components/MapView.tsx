@@ -164,9 +164,10 @@ function MapView() {
 	};
 	//search result list
 	const [searchMarkerResultFlag, setSearchResultFlag] = useRecoilState(SearchResultFlagAtom);
-	const onClickResultBox = (x: number, y: number) => {
-		setLocation({ lat: y, lng: x });
-		setGetCenter({ lat: y, lng: x });
+	const onClickResultBox = (info: ISearchInfo) => {
+		setLocation({ lat: +info.y, lng: +info.x });
+		setGetCenter({ lat: +info.y, lng: +info.x });
+		mouseOverMarkerHandler(info);
 	};
 	//addressSearch
 	const [searchMarker, setSearchMarkers] = useRecoilState(SearchMarkersAtom);
@@ -179,7 +180,6 @@ function MapView() {
 			setGetCenter({ lat: +y, lng: +x });
 			setLevel(3);
 			setSearchMarkers({ flag: false, result: [] });
-			setSearchResultFlag(false);
 			result.map((data) => {
 				setSearchResultFlag(true);
 				setSearchMarkers(({ result }) => {
@@ -236,7 +236,6 @@ function MapView() {
 	};
 
 	const searchInputMouseHandler = () => {
-		console.log("mouseOn");
 		setSearchResultFlag(true);
 	};
 	//customOverlay detailBox
@@ -254,9 +253,6 @@ function MapView() {
 		level: level,
 	};
 	//marker eventlistener
-	const onMouseOverMarker = (target: kakao.maps.Marker) => {
-		console.log(target);
-	}
 	const mouseOverMarkerHandler = (info: ISearchInfo) => {
 		setOverlayDetail({
 			flag: true,
@@ -280,6 +276,7 @@ function MapView() {
 		setOverlayDetail((oldData) => {
 			return { flag: false, result: oldData.result }
 		});
+		setSearchResultFlag(false);
 	}
 	return (
 		<>
@@ -310,7 +307,7 @@ function MapView() {
 					{searchMarkerResultFlag ?
 						<SearchResult>
 							{searchMarker.result.map((data) =>
-								<SearchResultBox key={data.info.id} onClick={() => { onClickResultBox(+data.info.x, +data.info.y) }}>
+								<SearchResultBox key={data.info.id} onClick={() => { onClickResultBox(data.info) }}>
 									<span>{data.info.place_name}</span>
 									<span>지번 : {data.info.address_name}</span>
 									{data.info.road_address_name ?
@@ -323,7 +320,12 @@ function MapView() {
 					}
 				</SearchContainer>
 				<ToolBox />
-				<Map {...mapobj} onZoomChanged={onZoomChanged} onIdle={getCenter}>
+				<Map
+					{...mapobj}
+					onZoomChanged={onZoomChanged}
+					onIdle={getCenter}
+					onDragStart={onMouseOutMarkerHandler}
+				>
 					{mapType && <MapTypeId type={mapType} />}
 					{currentMarkerFlag ?
 						<MapMarker {...currentMarkerStyle} />
@@ -331,11 +333,6 @@ function MapView() {
 					}
 					{searchMarker.flag ?
 						searchMarker.result.map((data) =>
-							// <MapMarker
-							// 	key={data.id}
-							// 	{...data.result}
-							// 	onMouseOver={onMouseOverMarker}
-							// />
 							<CustomOverlayMap
 								key={data.option.id}
 								position={{ ...data.option.result.position }}
