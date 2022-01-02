@@ -11,6 +11,8 @@ import {
 } from "../atoms";
 import Geocode from "react-geocode";
 import { useEffect } from "react";
+import userMarkerImage from "../Images/user.png";
+import { geocode } from "../Util/geocode";
 
 const ToolBoxs = styled.div`
 	width: 45px;
@@ -113,14 +115,6 @@ interface IProps {
 	lng: number,
 }
 
-interface IGeocodeResult {
-	result?: [
-		{
-			formatted_address: string,
-		}
-	]
-}
-
 function ToolBox() {
 	// zoom
 	const [level, setLevel] = useRecoilState(levelAtom);
@@ -161,53 +155,14 @@ function ToolBox() {
 	};
 	//geocode
 	const setCurrentMarker = useSetRecoilState(CurrnetMarkersAtom);
-
-	Geocode.setApiKey(process.env.REACT_APP_GOOGLE_API_KEY);
-	Geocode.setLanguage("ko");
-	Geocode.setRegion("kr");
-	Geocode.enableDebug();
-
-	const GoogleMap = async ({ lat, lng }: IProps) => {
-		return await Geocode.fromLatLng(lat + "", lng + "")
-			.then(response => {
-				const result = response.results[0].formatted_address;
-				setCurrentMarker({
-					flag: true,
-					result: [
-						{
-							option: {
-								id: Date.now(),
-								result: {
-									position: {
-										lat: currentLat,
-										lng: currentLng,
-									},
-									image: {
-										src: "https://cdn-icons-png.flaticon.com/512/4151/4151073.png",
-										size: {
-											width: 50,
-											height: 50,
-										}
-									},
-									clickable: true,
-								}
-							},
-							info: {
-								address_name: result as string | "",
-								id: Date.now() + "",
-								x: currentLng + "",
-								y: currentLat + "",
-							}
-						}
-					]
-				});
-				console.log(result);
-				return result;
-			}).catch(err => console.log(err));
-	}
 	useEffect(() => {
 		if (currentFlag) {
-			GoogleMap({ lat: currentLat, lng: currentLng });
+			geocode({
+				lat: currentLat,
+				lng: currentLng,
+				imageUrl: userMarkerImage,
+				setMarker: setCurrentMarker
+			});
 		}
 	}, [currentLat, currentLng])
 

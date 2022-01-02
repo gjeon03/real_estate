@@ -20,11 +20,14 @@ import {
 	CustomOverlayDetailAtom,
 	IMarkersOption,
 	CurrnetMarkersAtom,
+	ClickMapMarkerAtom,
 } from "../atoms";
 import ToolBox from "./ToolBox";
 import { useForm } from "react-hook-form";
 import CustomMarker from "./CustomMarker";
 import Search from "./Search";
+import checkMarkerImage from "../Images/location.png";
+import { geocode } from "../Util/geocode";
 
 const Container = styled.div`
 	width: 100%;
@@ -57,7 +60,7 @@ function MapView() {
 	//addressSearch marker
 	const searchMarker = useRecoilValue(SearchMarkersAtom);
 	//customOverlay detailBox
-	const setOverlayDetail = useSetRecoilState(CustomOverlayDetailAtom);
+	const [overlayDetail, setOverlayDetail] = useRecoilState(CustomOverlayDetailAtom);
 	//map option
 	const mapOption = {
 		center: { lat: lat, lng: lng },
@@ -72,19 +75,19 @@ function MapView() {
 	};
 	//current info
 	const currentMarker = useRecoilValue(CurrnetMarkersAtom);
-	const currentMarkerStyle = {
-		position: {
-			lat: currentLat,
-			lng: currentLng,
-		},
-		image: {
-			src: "https://cdn-icons-png.flaticon.com/512/4151/4151073.png",
-			size: {
-				width: 50,
-				height: 50
-			}
+	//click marker
+	const [clickMarker, setClickMarker] = useRecoilState(ClickMapMarkerAtom);
+	const onClickMapHandler = (target: kakao.maps.Map, mouseEvent: kakao.maps.event.MouseEvent) => {
+		const { latLng } = mouseEvent;
+		if (!overlayDetail.flag && latLng?.getLat && latLng.getLng) {
+			geocode({
+				lat: latLng.getLat(),
+				lng: latLng.getLng(),
+				imageUrl: checkMarkerImage,
+				setMarker: setClickMarker,
+			});
 		}
-	};
+	}
 	return (
 		<>
 			<Container>
@@ -95,6 +98,7 @@ function MapView() {
 					onZoomChanged={onZoomChanged}
 					onIdle={getCenter}
 					onDragStart={onMouseOutMarkerHandler}
+					onClick={onClickMapHandler}
 				>
 					{mapType && <MapTypeId type={mapType} />}
 					{/* {currentMarkerFlag ?
@@ -110,6 +114,12 @@ function MapView() {
 					{currentMarker.flag ?
 						<CustomMarker
 							data={currentMarker}
+							yAnchor={1}
+						/>
+						: null}
+					{clickMarker.flag ?
+						<CustomMarker
+							data={clickMarker}
 							yAnchor={1}
 						/>
 						: null}

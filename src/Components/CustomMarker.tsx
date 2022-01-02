@@ -13,14 +13,13 @@ const CustomOverlayMarker = styled(motion.div) <{ markerurl: string }>`
 	width: 50px;
 	height: 50px;
 	background-image: url(${(props) => props.markerurl});
-		//"https://cdn-icons.flaticon.com/png/512/5695/premium/5695077.png?token=exp=1640874582~hmac=5b1c38465ba47869b7a6af73b7996c3d");
 	background-size: 100% 100%;
 	cursor: pointer;
 `;
 
 const CustomOverlayContent = styled.div`
 	width: auto;
-	height: 100px;
+	height: 70px;
 	background-color: white;
 	border: 2px solid #FA8809;
 	border-radius: 20px;
@@ -91,12 +90,12 @@ function CustomMarker({ data, yAnchor }: IProps) {
 			{overlayDetailResult.flag ?
 				<CustomOverlayMap
 					position={{ lat: +overlayDetailResult.result.y, lng: +overlayDetailResult.result.x }}
-					yAnchor={yAnchor + 0.6}
+					yAnchor={yAnchor + 0.9}
 				>
 					<CustomOverlayContent>
 						{overlayDetailResult.result.place_name ?
 							<span>{overlayDetailResult.result.place_name}</span>
-							: null}
+							: <span></span>}
 						<span>지번 : {overlayDetailResult.result.address_name}</span>
 						{overlayDetailResult.result.road_address_name ?
 							<span>도로명 : {overlayDetailResult.result.road_address_name}</span>

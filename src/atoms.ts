@@ -117,3 +117,11 @@ export const CustomOverlayDetailAtom = atom<ICustomDetail>({
 		}
 	},
 });
+
+export const ClickMapMarkerAtom = atom<IMarkers>({
+	key: "clickMapMarker",
+	default: {
+		flag: false,
+		result: [],
+	}
+});

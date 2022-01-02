@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useForm } from "react-hook-form";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CustomOverlayDetailAtom, IMarkerInfo, levelAtom, locationAtom, SearchMarkersAtom, SearchResultFlagAtom } from "../atoms";
+import searchMarkerImage from "../Images/search.png";
 
 const SearchContainer = styled.div`
 	width: 300px;
@@ -115,7 +116,7 @@ function Search() {
 										lng: +data.x,
 									},
 									image: {
-										src: "https://cdn-icons.flaticon.com/png/512/5695/premium/5695077.png?token=exp=1640982418~hmac=eb89aa3fa9b093270131f2e8974cb424",
+										src: `${searchMarkerImage}`,
 										size: {
 											width: 50,
 											height: 50,
