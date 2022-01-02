@@ -1,13 +1,16 @@
 import { motion } from "framer-motion";
 import { CustomOverlayMap } from "react-kakao-maps-sdk";
-import { useRecoilState, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import styled from "styled-components";
 import {
 	IMarkers,
 	IMarkerInfo,
 	CustomOverlayDetailAtom,
-	SearchResultFlagAtom
+	SearchResultFlagAtom,
+	ClickMapMarkerAtom
 } from "../atoms";
+import { geocode } from "../Util/geocode";
+import checkMarkerImage from "../Images/location.png";
 
 const CustomOverlayMarker = styled(motion.div) <{ markerurl: string }>`
 	width: 50px;
@@ -15,6 +18,7 @@ const CustomOverlayMarker = styled(motion.div) <{ markerurl: string }>`
 	background-image: url(${(props) => props.markerurl});
 	background-size: 100% 100%;
 	cursor: pointer;
+	display: block;
 `;
 
 const CustomOverlayContent = styled.div`
@@ -70,6 +74,57 @@ function CustomMarker({ data, yAnchor }: IProps) {
 		});
 		setSearchResultFlag(false);
 	}
+	//custom overlay drag
+	let startX: number;
+	let startY: number;
+	let startOverlayPoint: kakao.maps.Point | any;
+	let clickCustomProj: kakao.maps.MapProjection | undefined;
+	let clickCustomOverlay: kakao.maps.CustomOverlay;
+	const MarkerDraggHandler = (customOverlay: kakao.maps.CustomOverlay) => {
+		clickCustomProj = customOverlay.getMap()?.getProjection();
+		clickCustomOverlay = customOverlay;
+	};
+	const onMouseDownHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		kakao.maps.event.preventMap();
+		const overlayPos = clickCustomOverlay.getPosition();
+		startX = event.clientX;
+		startY = event.clientY;
+		startOverlayPoint = clickCustomProj?.containerPointFromCoords(overlayPos);
+		event.currentTarget.addEventListener('mousemove', onMouseMove);
+		setOverlayDetail({
+			flag: false,
+			result: {
+				address_name: "",
+				id: "",
+				x: "",
+				y: "",
+			}
+		});
+	};
+	const setClickMarker = useSetRecoilState(ClickMapMarkerAtom);
+	const onMouseMove = (event: any) => {
+		event.preventDefault();
+		const deltaX = startX - event.clientX;
+		const deltaY = startY - event.clientY;
+		// mousedown됐을 때의 커스텀 오버레이의 좌표에 실제로 마우스가 이동된 픽셀좌표를 반영합니다 
+		const newPoint = new kakao.maps.Point(startOverlayPoint.x - deltaX, startOverlayPoint.y - deltaY);
+		// 계산된 픽셀 좌표를 지도 컨테이너에 해당하는 지도 좌표로 변경합니다 
+		// const s = kakao.maps.Map;
+		const newPos = clickCustomProj?.coordsFromContainerPoint(newPoint);
+		// 커스텀 오버레이의 좌표를 설정합니다 
+		clickCustomOverlay.setPosition(newPos as kakao.maps.LatLng);
+	}
+	const onMouseUpHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+		// 등록된 mousemove 이벤트 핸들러를 제거합니다 
+		geocode({
+			lat: clickCustomOverlay.getPosition().getLat(),
+			lng: clickCustomOverlay.getPosition().getLng(),
+			imageUrl: checkMarkerImage,
+			setMarker: setClickMarker,
+		});
+		event.currentTarget.removeEventListener('mousemove', onMouseMove);
+	}
 	return (
 		<>
 			{data.result.map((item) =>
@@ -77,6 +132,7 @@ function CustomMarker({ data, yAnchor }: IProps) {
 					key={item?.option.id}
 					position={{ ...item.option.result.position }}
 					yAnchor={yAnchor}
+					onCreate={MarkerDraggHandler}
 				>
 					<CustomOverlayMarker
 						variants={markerVariants}
@@ -84,6 +140,8 @@ function CustomMarker({ data, yAnchor }: IProps) {
 						onMouseOver={() => onMouseOverMarkerHandler(item.info)}
 						onMouseOut={() => onMouseOutMarkerHandler()}
 						markerurl={item.option.result.image.src}
+						onMouseDown={onMouseDownHandler}
+						onMouseUp={onMouseUpHandler}
 					/>
 				</CustomOverlayMap>
 			)}
